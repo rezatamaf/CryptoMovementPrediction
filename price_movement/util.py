@@ -157,6 +157,16 @@ class GSheetUpdater:
         new_reference_price = model_output['reference_price']
         tomorrow_prediction_worksheet = self._get_worksheet(spreadsheet_name, tomorrow_prediction_ws_name)
         last_prediction_row = tomorrow_prediction_worksheet.get_row(2, include_tailing_empty=False)
+        prediction_result_worksheet = self._get_worksheet(spreadsheet_name, prediction_result_ws_name)
+        prediction_result_values = prediction_result_worksheet.get_all_values(include_tailing_empty_rows=False,
+                                                                              include_tailing_empty=False,
+                                                                              returnas='matrix')
+        last_prediction_result_date = prediction_result_values[-1][0]
+        new_prediction_result_date = Utils.datetime_to_str(previous_day_date_with_hour, fmt='%Y-%m-%d %H:%M:%S')
+        if last_prediction_result_date == new_prediction_result_date:
+            logging.warning(f"The prediction result for {last_prediction_result_date} already exist,"
+                            f" no update will be done")
+            return
         if len(last_prediction_row) > 0:
             last_reference_price = float(last_prediction_row[1].replace(',', '.'))
             last_prediction = last_prediction_row[2]
@@ -168,17 +178,13 @@ class GSheetUpdater:
         else:
             price_diff = ''
             prediction = ''
-        new_prediction_result_row = [Utils.datetime_to_str(previous_day_date_with_hour, fmt='%Y-%m-%d %H:%M:%S'),
+        new_prediction_result_row = [new_prediction_result_date,
                                      new_reference_price,
                                      previous_day_date.day,
                                      price_diff,
                                      prediction
-                                     ]  # ordered as gsheet's column order
-        prediction_result_worksheet = self._get_worksheet(spreadsheet_name, prediction_result_ws_name)
-        cells = prediction_result_worksheet.get_all_values(include_tailing_empty_rows=False,
-                                                           include_tailing_empty=False,
-                                                           returnas='matrix')
-        last_row_idx = len(cells)
+                                     ]  # ordered as g-sheet's column order
+        last_row_idx = len(prediction_result_values)
         prediction_result_worksheet.update_values(f'A{last_row_idx + 1}', values=[new_prediction_result_row])
         added_row = prediction_result_worksheet.get_row(last_row_idx + 1, include_tailing_empty=False)
         if len(added_row) > 0:
@@ -188,7 +194,18 @@ class GSheetUpdater:
                                    worksheet_name: str):
         predicted_at = Utils.str_to_datetime(model_output['date']).date()
         predicted_for = predicted_at + dt.timedelta(1)
-        new_row = [Utils.datetime_to_str(predicted_for, fmt='%Y/%m/%d'),
+        tomorrow_prediction_worksheet = self._get_worksheet(spreadsheet_name, worksheet_name)
+        tomorrow_prediction_worksheet_values = tomorrow_prediction_worksheet.get_all_values(
+            include_tailing_empty_rows=False,
+            include_tailing_empty=False,
+            returnas='matrix')
+        last_prediction_date = tomorrow_prediction_worksheet_values[-1][0]
+        new_prediction_date = Utils.datetime_to_str(predicted_for, fmt='%Y/%m/%d')
+        if last_prediction_date == new_prediction_date:
+            logging.warning(f"The prediction for {last_prediction_date} already exist,"
+                            f" no update will be done")
+            return
+        new_row = [new_prediction_date,
                    model_output['reference_price'],
                    model_output['tomorrow_prediction'],
                    model_output['twitter_positive_sentiment'],
