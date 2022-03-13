@@ -85,7 +85,7 @@ class Inferrer:
             raise ValueError("Duplicate data in selected date are detected!")
         file = files[0]
         column_names = list(NLPDataConstants.COL_NAMES.values())
-        column_dtypes = NLPDataConstants.COL_DTYPES
+        column_dtypes = NLPDataConstants.COL_DTYPES.copy()
         try:
             df = pd.read_csv(file, usecols=column_names, dtype=column_dtypes, parse_dates=['date'])
         except ValueError as e:
