@@ -2,6 +2,7 @@ import datetime as dt
 import glob
 import logging
 import json
+import re
 
 import pandas as pd
 import pygsheets
@@ -14,7 +15,7 @@ class Utils:
         if today_reference is None:
             today = dt.datetime.today().date()
         else:
-            today = dt.datetime.strptime(today_reference, "%Y-%m-%d").date()
+            today = Utils.str_to_datetime(today_reference).date()
         yesterday = today - dt.timedelta(1)
         day_offset = 2  # 1 day for lagged processing, 1 day for predicting
         start_date = today - dt.timedelta(training_period + day_offset)
@@ -25,8 +26,9 @@ class Utils:
     @staticmethod
     def get_relevant_files(data_dir: str, training_period: int, today_reference: str) -> list:
         files = glob.glob(f'{data_dir}/*.json')
-        relevant_dates = Utils.get_relevant_dates(training_period, today_reference).strftime('%Y-%m-%d').tolist()
-        relevant_files = [i for i in files if i.split('_')[-1][:-5] in relevant_dates]
+        relevant_dates = Utils.get_relevant_dates(training_period, today_reference)
+        relevant_dates_in_str = [Utils.datetime_to_str(i) for i in relevant_dates]
+        relevant_files = [i for i in files if Utils.extract_date_from_text(i) in relevant_dates_in_str]
         # check duplicate files
         if len(relevant_files) != len(set(relevant_files)):
             raise ValueError('Found multiple files with same date!')
@@ -37,6 +39,18 @@ class Utils:
         files = glob.glob(f'{data_dir}/*.json')
         sample_files = [files[0]]
         return sample_files
+
+    @staticmethod
+    def datetime_to_str(date_time, fmt='%Y-%m-%d') -> str:
+        return date_time.strftime(fmt)
+
+    @staticmethod
+    def str_to_datetime(text: str, fmt='%Y-%m-%d'):
+        return dt.datetime.strptime(text, fmt)
+
+    @staticmethod
+    def extract_date_from_text(text: str, pattern=r'\d{4}-\d{2}-\d{2}'):
+        return re.search(pattern, text).group()
 
     @staticmethod
     def parse_date(df: pd.DataFrame, date_col='date') -> pd.DataFrame:
@@ -117,9 +131,9 @@ class GSheetUpdater:
 
     def append_prediction_history(self, model_output: dict, spreadsheet_name: str,
                                   worksheet_name: str):
-        predict_at = dt.datetime.strptime(model_output['date'], "%Y-%m-%d").replace(hour=0, minute=00, second=00)
-        predict_for = predict_at + dt.timedelta(days=1, hours=7)
-        new_prediction_history_row = [predict_for,
+        predicted_at = Utils.str_to_datetime(model_output['date'])
+        predicted_for = predicted_at + dt.timedelta(days=1, hours=7)
+        new_prediction_history_row = [predicted_for,
                                       model_output['tomorrow_price_up_prob'],
                                       model_output['tomorrow_prediction'],
                                       model_output['twitter_positive_sentiment'],
@@ -138,7 +152,7 @@ class GSheetUpdater:
     def append_prediction_result(self, model_output: dict, spreadsheet_name: str,
                                  prediction_result_ws_name: str,
                                  tomorrow_prediction_ws_name: str):
-        previous_day_date = dt.datetime.strptime(model_output['date'], "%Y-%m-%d")
+        previous_day_date = Utils.str_to_datetime(model_output['date'])
         previous_day_date_with_hour = previous_day_date + dt.timedelta(hours=7)
         new_reference_price = model_output['reference_price']
         tomorrow_prediction_worksheet = self._get_worksheet(spreadsheet_name, tomorrow_prediction_ws_name)
@@ -154,7 +168,7 @@ class GSheetUpdater:
         else:
             price_diff = ''
             prediction = ''
-        new_prediction_result_row = [previous_day_date_with_hour.strftime('%Y-%m-%d %H:%M:%S'),
+        new_prediction_result_row = [Utils.datetime_to_str(previous_day_date_with_hour, fmt='%Y-%m-%d %H:%M:%S'),
                                      new_reference_price,
                                      previous_day_date.day,
                                      price_diff,
@@ -172,9 +186,9 @@ class GSheetUpdater:
 
     def update_tomorrow_prediction(self, model_output: dict, spreadsheet_name: str,
                                    worksheet_name: str):
-        predict_at = dt.datetime.strptime(model_output['date'], "%Y-%m-%d").date()
-        predict_for = predict_at + dt.timedelta(1)
-        new_row = [predict_for.strftime('%Y/%m/%d'),
+        predicted_at = Utils.str_to_datetime(model_output['date']).date()
+        predicted_for = predicted_at + dt.timedelta(1)
+        new_row = [Utils.datetime_to_str(predicted_for, fmt='%Y/%m/%d'),
                    model_output['reference_price'],
                    model_output['tomorrow_prediction'],
                    model_output['twitter_positive_sentiment'],

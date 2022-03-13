@@ -2,14 +2,15 @@ import datetime as dt
 import numpy as np
 
 from price_movement.data_loader import DataLoader
+from price_movement.util import Utils
 
 
 def generate_output(data_loader: DataLoader, predict_proba: np.array, model_threshold: float) -> dict:
     price_up_prob = predict_proba[0, 1]
     prediction = 'Up' if price_up_prob > model_threshold else 'Down'
     utc_date = data_loader.test_date  # date(UTC)
-    wib_datetime = dt.datetime.strptime(data_loader.test_date, "%Y-%m-%d") + dt.timedelta(1)
-    wib_date = wib_datetime.strftime('%Y-%m-%d')
+    wib_datetime = Utils.str_to_datetime(data_loader.test_date) + dt.timedelta(1)
+    wib_date = Utils.datetime_to_str(wib_datetime)
     output = {'utc_date': utc_date,
               'date': wib_date,
               'reference_price': float(data_loader.reference_price),

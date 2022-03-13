@@ -11,6 +11,7 @@ from pandas.api.types import is_object_dtype
 from sentiment import bert_preprocessor, text_preprocessor
 from sentiment.constant import NLPDataConstants, ModelConstants
 from sentiment.model_loader import ModelLoader
+from price_movement.util import Utils
 
 
 class Inferrer:
@@ -76,7 +77,7 @@ class Inferrer:
     @staticmethod
     def _load_df(data_dir: str, date: str) -> pd.DataFrame:
         if date is None:
-            date = (dt.datetime.today() - dt.timedelta(1)).strftime('%Y-%m-%d')
+            date = Utils.datetime_to_str(dt.datetime.today() - dt.timedelta(1))
         files = glob.glob(f'{data_dir}/*{date}.csv')
         if len(files) == 0:
             raise IndexError("No data found in selected date!")
@@ -156,7 +157,7 @@ class Inferrer:
     @staticmethod
     def generate_output(predicted_sentiment: pd.Series, unsampled_df: pd.DataFrame) -> dict:
         sentiment_dist = Inferrer._count_sentiment_distribution(predicted_sentiment)
-        inference_date = unsampled_df.date.dt.date.values[0].strftime('%Y-%m-%d')
+        inference_date = Utils.datetime_to_str(unsampled_df.date.dt.date.values[0])
         output = {'date': inference_date,
                   'total_docs': len(unsampled_df),
                   'sentiment': sentiment_dist}
