@@ -162,8 +162,9 @@ class GSheetUpdater:
                                                                               include_tailing_empty=False,
                                                                               returnas='matrix')
         last_prediction_result_date = prediction_result_values[-1][0]
-        new_prediction_result_date = Utils.datetime_to_str(previous_day_date_with_hour, fmt='%Y-%m-%d %H:%M:%S')
-        if last_prediction_result_date == new_prediction_result_date:
+        last_prediction_result_datetime = Utils.str_to_datetime(last_prediction_result_date, fmt='%Y-%m-%d %H:%M:%S')
+        new_prediction_result_datestr = Utils.datetime_to_str(previous_day_date_with_hour, fmt='%Y-%m-%d %H:%M:%S')
+        if last_prediction_result_datetime == previous_day_date_with_hour:
             logging.warning(f"The prediction result for {last_prediction_result_date} already exist,"
                             f" no update will be done")
             return
@@ -178,7 +179,7 @@ class GSheetUpdater:
         else:
             price_diff = ''
             prediction = ''
-        new_prediction_result_row = [new_prediction_result_date,
+        new_prediction_result_row = [new_prediction_result_datestr,
                                      new_reference_price,
                                      previous_day_date.day,
                                      price_diff,
@@ -200,12 +201,13 @@ class GSheetUpdater:
             include_tailing_empty=False,
             returnas='matrix')
         last_prediction_date = tomorrow_prediction_worksheet_values[-1][0]
-        new_prediction_date = Utils.datetime_to_str(predicted_for, fmt='%Y/%m/%d')
-        if last_prediction_date == new_prediction_date:
+        last_prediction_datetime = Utils.str_to_datetime(last_prediction_date, fmt='%d/%m/%Y')
+        new_prediction_datestr = Utils.datetime_to_str(predicted_for, fmt='%d/%m/%Y')
+        if last_prediction_datetime == predicted_for:
             logging.warning(f"The prediction for {last_prediction_date} already exist,"
                             f" no update will be done")
             return
-        new_row = [new_prediction_date,
+        new_row = [new_prediction_datestr,
                    model_output['reference_price'],
                    model_output['tomorrow_prediction'],
                    model_output['twitter_positive_sentiment'],
