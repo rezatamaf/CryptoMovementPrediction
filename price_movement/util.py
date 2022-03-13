@@ -1,0 +1,186 @@
+import datetime as dt
+import glob
+import logging
+import json
+
+import pandas as pd
+import pygsheets
+from sklearn.model_selection import train_test_split
+
+
+class Utils:
+    @staticmethod
+    def get_relevant_dates(training_period: int, today_reference: str) -> pd.DatetimeIndex:
+        if today_reference is None:
+            today = dt.datetime.today().date()
+        else:
+            today = dt.datetime.strptime(today_reference, "%Y-%m-%d").date()
+        yesterday = today - dt.timedelta(1)
+        day_offset = 2  # 1 day for lagged processing, 1 day for predicting
+        start_date = today - dt.timedelta(training_period + day_offset)
+        end_date = yesterday
+        relevant_dates = pd.date_range(start_date, end_date, freq='d')
+        return relevant_dates
+
+    @staticmethod
+    def get_relevant_files(data_dir: str, training_period: int, today_reference: str) -> list:
+        files = glob.glob(f'{data_dir}/*.json')
+        relevant_dates = Utils.get_relevant_dates(training_period, today_reference).strftime('%Y-%m-%d').tolist()
+        relevant_files = [i for i in files if i.split('_')[-1][:-5] in relevant_dates]
+        # check duplicate files
+        if len(relevant_files) != len(set(relevant_files)):
+            raise ValueError('Found multiple files with same date!')
+        return relevant_files
+
+    @staticmethod
+    def get_sample_files(data_dir: str) -> list:
+        files = glob.glob(f'{data_dir}/*.json')
+        sample_files = [files[0]]
+        return sample_files
+
+    @staticmethod
+    def parse_date(df: pd.DataFrame, date_col='date') -> pd.DataFrame:
+        df[date_col] = pd.to_datetime(df[date_col])
+        return df.sort_values(by=date_col).set_index(date_col)
+
+    @staticmethod
+    def load_relevant_jsons(data_dir: str, training_period: int, today_reference: str) -> pd.DataFrame:
+        media_source = data_dir.split('/')[-1].lower()
+        try:
+            files = Utils.get_relevant_files(data_dir, training_period, today_reference)
+        except ValueError as error:
+            logging.error(error)
+            raise
+        if len(files) == 0:
+            logging.warning(f"No {media_source} data found on the relevant dates!")
+            files = Utils.get_sample_files(data_dir)
+        dfs = []
+        for i in files:
+            with open(i) as f:
+                json_data = pd.json_normalize(json.loads(f.read()))
+            dfs.append(json_data)
+        data_df = pd.concat(dfs, sort=False).fillna(0)
+        return Utils.parse_date(data_df)
+
+    @staticmethod
+    def split_data(df: pd.DataFrame) -> tuple:
+        X = df.drop(['is_price_up', 'close_price'], axis=1)
+        y = df['is_price_up']
+        X_train, X_test, y_train, _ = train_test_split(X, y, test_size=1, shuffle=False)
+        return X_train, X_test, y_train
+
+    @staticmethod
+    def dump_output(model_output: dict, out_dir: str):
+        dir_name = out_dir
+        file_name = f'prediction_{model_output["date"]}.json'
+        path = f'{dir_name}/{file_name}'
+        with open(path, 'w') as f:
+            json.dump(model_output, f)
+
+
+class GSheetUpdater:
+    def __init__(self, credential_path: str):
+        self.credential_path = credential_path
+        self.client = self._authorize()
+
+    def _authorize(self):
+        client = pygsheets.authorize(service_file=self.credential_path)
+        return client
+
+    def _get_worksheet(self, spreadsheet_name: str, worksheet_name: str):
+        spreadsheet = self.client.open(spreadsheet_name)
+        worksheet = spreadsheet.worksheet_by_title(worksheet_name)
+        return worksheet
+
+    @staticmethod
+    def _get_all_cell_values(worksheet: pygsheets.Worksheet, **kwargs):
+        values = worksheet.get_all_values(returnas='matrix', **kwargs)
+        return values
+
+    def update(self, model_output: dict,
+               spreadsheet_name: str,
+               prediction_result_ws_name: str,
+               tomorrow_prediction_ws_name: str):
+        prediction_result_worksheet = self._get_worksheet(spreadsheet_name, prediction_result_ws_name)
+        tomorrow_prediction_worksheet = self._get_worksheet(spreadsheet_name, tomorrow_prediction_ws_name)
+        prediction_result_cells = self._get_all_cell_values(prediction_result_worksheet)
+        tomorrow_prediction_cells = self._get_all_cell_values(tomorrow_prediction_worksheet)
+        try:
+            self.append_prediction_result(model_output, spreadsheet_name,
+                                          prediction_result_ws_name, tomorrow_prediction_ws_name)
+            self.update_tomorrow_prediction(model_output, spreadsheet_name, tomorrow_prediction_ws_name)
+        except Exception as e:
+            logging.error(e)
+            logging.info("Rollback all updates")
+            prediction_result_worksheet.update_values('A1', values=prediction_result_cells)
+            tomorrow_prediction_worksheet.update_values('A1', values=tomorrow_prediction_cells)
+
+    def append_prediction_history(self, model_output: dict, spreadsheet_name: str,
+                                  worksheet_name: str):
+        predict_at = dt.datetime.strptime(model_output['date'], "%Y-%m-%d").replace(hour=0, minute=00, second=00)
+        predict_for = predict_at + dt.timedelta(days=1, hours=7)
+        new_prediction_history_row = [predict_for,
+                                      model_output['tomorrow_price_up_prob'],
+                                      model_output['tomorrow_prediction'],
+                                      model_output['twitter_positive_sentiment'],
+                                      model_output['twitter_negative_sentiment'],
+                                      model_output['google_trends'],
+                                      model_output['news_sentiment']
+                                      ]
+        worksheet = self._get_worksheet(spreadsheet_name, worksheet_name)
+        cells = self._get_all_cell_values(worksheet, include_tailing_empty_rows=False, include_tailing_empty=False)
+        last_row_idx = len(cells)
+        worksheet.insert_rows(last_row_idx, number=1, values=new_prediction_history_row)
+        added_row = worksheet.get_row(last_row_idx + 1, include_tailing_empty=False)
+        if len(added_row) > 0:
+            logging.info(f"Appending prediction history success on row #{last_row_idx + 1}!")
+
+    def append_prediction_result(self, model_output: dict, spreadsheet_name: str,
+                                 prediction_result_ws_name: str,
+                                 tomorrow_prediction_ws_name: str):
+        previous_day_date = dt.datetime.strptime(model_output['date'], "%Y-%m-%d")
+        previous_day_date_with_hour = previous_day_date + dt.timedelta(hours=7)
+        new_reference_price = model_output['reference_price']
+        tomorrow_prediction_worksheet = self._get_worksheet(spreadsheet_name, tomorrow_prediction_ws_name)
+        last_prediction_row = tomorrow_prediction_worksheet.get_row(2, include_tailing_empty=False)
+        if len(last_prediction_row) > 0:
+            last_reference_price = float(last_prediction_row[1].replace(',', '.'))
+            last_prediction = last_prediction_row[2]
+            price_diff = new_reference_price - last_reference_price
+            up_prediction_correct = (price_diff > 0) and (last_prediction == 'Up')
+            down_prediction_correct = (price_diff < 0) and (last_prediction == 'Down')
+            prediction_correct = up_prediction_correct or down_prediction_correct
+            prediction = 'Correct' if prediction_correct else 'Wrong'
+        else:
+            price_diff = ''
+            prediction = ''
+        new_prediction_result_row = [previous_day_date_with_hour.strftime('%Y-%m-%d %H:%M:%S'),
+                                     new_reference_price,
+                                     previous_day_date.day,
+                                     price_diff,
+                                     prediction
+                                     ]  # ordered as gsheet's column order
+        prediction_result_worksheet = self._get_worksheet(spreadsheet_name, prediction_result_ws_name)
+        cells = prediction_result_worksheet.get_all_values(include_tailing_empty_rows=False,
+                                                           include_tailing_empty=False,
+                                                           returnas='matrix')
+        last_row_idx = len(cells)
+        prediction_result_worksheet.update_values(f'A{last_row_idx + 1}', values=[new_prediction_result_row])
+        added_row = prediction_result_worksheet.get_row(last_row_idx + 1, include_tailing_empty=False)
+        if len(added_row) > 0:
+            logging.info(f"Appending prediction result success on row #{last_row_idx + 1}!")
+
+    def update_tomorrow_prediction(self, model_output: dict, spreadsheet_name: str,
+                                   worksheet_name: str):
+        predict_at = dt.datetime.strptime(model_output['date'], "%Y-%m-%d").date()
+        predict_for = predict_at + dt.timedelta(1)
+        new_row = [predict_for.strftime('%Y/%m/%d'),
+                   model_output['reference_price'],
+                   model_output['tomorrow_prediction'],
+                   model_output['twitter_positive_sentiment'],
+                   model_output['twitter_negative_sentiment'],
+                   model_output['google_trends'],
+                   ]
+        worksheet = self._get_worksheet(spreadsheet_name, worksheet_name)
+        worksheet.update_row(2, values=new_row)
+        logging.info(f"Updating tomorrow Prediction success!")
