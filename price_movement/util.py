@@ -203,7 +203,7 @@ class GSheetUpdater:
         last_prediction_date = tomorrow_prediction_worksheet_values[-1][0]
         last_prediction_datetime = Utils.str_to_datetime(last_prediction_date, fmt='%d/%m/%Y')
         new_prediction_datestr = Utils.datetime_to_str(predicted_for, fmt='%d/%m/%Y')
-        if last_prediction_datetime == predicted_for:
+        if last_prediction_datetime.date() == predicted_for:
             logging.warning(f"The prediction for {last_prediction_date} already exist,"
                             f" no update will be done")
             return
