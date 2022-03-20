@@ -19,7 +19,7 @@ class Model:
         elif params is not None:
             clf = self.clf(**self.params)
         else:
-            clf = self.clf
+            clf = self.clf()
         return clf
 
     def _get_model_params(self) -> dict:

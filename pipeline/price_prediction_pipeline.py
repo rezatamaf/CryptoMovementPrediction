@@ -5,6 +5,7 @@ from price_movement.util import Utils, GSheetUpdater
 from price_movement.price_classifier import Model
 from price_movement.output_generator import generate_output
 from price_movement.feature_processor import select_features
+from price_movement.model_tuner import fine_tune_model
 
 # Define Constants
 DATA_DIR = '/content/drive/MyDrive/CryptoDataset'
@@ -41,13 +42,16 @@ df = data_loader.run(TRAINING_PERIOD, TODAY_REFERENCE)
 X_train, X_test, y_train = Utils.split_data(df)
 # load model
 model = Model()
-clf = model.get()
 # feature selection
-selected_features = select_features(clf, X_train[:TRAINING_PERIOD], y_train[:TRAINING_PERIOD])
-
+selected_features = select_features(clf=model.get(), X=X_train[:TRAINING_PERIOD], y=y_train[:TRAINING_PERIOD])
+X_with_selected_features = X_train[selected_features]
+# HPO
+tuned_hyperparams, eval_metrics = fine_tune_model(model.clf, X_with_selected_features, y_train, TRAINING_PERIOD,
+                                                  date_column='date', n_trials=20)
 # train and predict
-clf.fit(X_train, y_train)
-predict_proba = clf.predict_proba(X_test)
+tuned_clf = model.load_param(params=tuned_hyperparams)
+tuned_clf.fit(X_train, y_train)
+predict_proba = tuned_clf.predict_proba(X_test)
 # generate model output
 output = generate_output(data_loader, predict_proba, model_threshold=MODEL_THRESHOLD)
 print(output)
