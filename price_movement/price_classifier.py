@@ -10,10 +10,13 @@ class Model:
         self.clf = XGBClassifier
 
     def get(self):
-        if self.param_path is not None:
+        return self.load_param(self.param_path, self.params)
+
+    def load_param(self, param_path: str = None, params: dict = None):
+        if param_path is not None:
             model_params = self._get_model_params()
             clf = self.clf(**model_params)
-        elif self.params is not None:
+        elif params is not None:
             clf = self.clf(**self.params)
         else:
             clf = self.clf
