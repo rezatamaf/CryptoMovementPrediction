@@ -13,6 +13,7 @@ BTC_NEWS_SENTIMENT_DIR = f'{DATA_DIR}/sentiment/bitcoin_news'
 GTREND_DIR = f'{DATA_DIR}/crawled_dataset/google_trends'
 BINANCE_PRICE_DIR = f'{DATA_DIR}/crawled_dataset/binance_price'
 PREDICTION_OUTPUT_DIR = f'{DATA_DIR}/json_price_movement_prediction'
+GLASSNODE_API_PATH = ''  # change this with your own
 # gsheet related constants
 GSERVICE_CREDENTIAL = '/content/sylvan-epoch-255012-ca8e2747c1fa.json'  # change this with your own
 GSHEET_NAME = 'ResultTable'  # make sure gservice account above has access to the gsheet
@@ -33,6 +34,7 @@ data_loader = DataLoader(twitter_sentiment_dir=TWITTER_SENTIMENT_DIR,
                          cnn_sentiment_dir=CNN_SENTIMENT_DIR,
                          btcnews_sentiment_dir=BTC_NEWS_SENTIMENT_DIR,
                          gtrend_dir=GTREND_DIR,
+                         glassnode_api_path=GLASSNODE_API_PATH,
                          binance_price_dir=BINANCE_PRICE_DIR)
 df = data_loader.run(TRAINING_PERIOD, TODAY_REFERENCE)
 X_train, X_test, y_train = Utils.split_data(df)

@@ -91,14 +91,14 @@ class DataLoader:
                  btcnews_sentiment_dir: str,
                  gtrend_dir: str,
                  binance_price_dir: str,
-                 glassnode_api_key: str
+                 glassnode_api_path: str
                  ):
         self.twitter_sentiment_dir = twitter_sentiment_dir
         self.cnn_sentiment_dir = cnn_sentiment_dir
         self.btcnews_sentiment_dir = btcnews_sentiment_dir
         self.gtrend_dir = gtrend_dir
         self.binance_price_dir = binance_price_dir
-        self.glassnode_api_key = glassnode_api_key
+        self.glassnode_api_path = glassnode_api_path
         self.twitter_positive_sentiment = 0
         self.twitter_negative_sentiment = 0
         self.news_sentiment = 0
@@ -111,7 +111,7 @@ class DataLoader:
         cnn_df = self._load_sentiment(self.cnn_sentiment_dir, training_period, today_reference)
         gtrend_df = self._load_gtrend(self.gtrend_dir, training_period, today_reference)
         btcnews_df = self._load_sentiment(self.btcnews_sentiment_dir, training_period, today_reference)
-        fundamental_df = self._load_fundamental(self.glassnode_api_key, twitter_df.index)
+        fundamental_df = self._load_fundamental(self.glassnode_api_path, twitter_df.index)
         price_df = self._load_price(self.binance_price_dir, training_period, today_reference)
 
         # concat all data to one dataframe
@@ -161,11 +161,13 @@ class DataLoader:
         return gtrend_df
 
     @staticmethod
-    def _load_fundamental(api_key: str, reference_date_idx: pd.Index):
+    def _load_fundamental(api_path: str, reference_date_idx: pd.Index):
+        with open(api_path) as json_file:
+            loaded_json = json.load(json_file)
+        api_key = loaded_json['api_key']
         metric_loader = FundamentalMetricLoader(reference_date_idx, api_key)
         end_points = ['indicators/sopr', 'transactions/rate', 'mining/hash_rate_mean', 'addresses/active_count',
                       'blockchain/utxo_created_value_sum', 'blockchain/utxo_spent_value_sum']
         df = pd.DataFrame({i.split("/")[1]: metric_loader.get_metric(i) for i in end_points})
         df.index.names = ['date']
         return df
-
