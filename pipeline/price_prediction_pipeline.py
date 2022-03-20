@@ -4,6 +4,7 @@ from price_movement.data_loader import DataLoader
 from price_movement.util import Utils, GSheetUpdater
 from price_movement.price_classifier import Model
 from price_movement.output_generator import generate_output
+from price_movement.feature_processor import select_features
 
 # Define Constants
 DATA_DIR = '/content/drive/MyDrive/CryptoDataset'
@@ -39,8 +40,11 @@ data_loader = DataLoader(twitter_sentiment_dir=TWITTER_SENTIMENT_DIR,
 df = data_loader.run(TRAINING_PERIOD, TODAY_REFERENCE)
 X_train, X_test, y_train = Utils.split_data(df)
 # load model
-model = Model(param_path=MODEL_PARAM_PATH)
+model = Model()
 clf = model.get()
+# feature selection
+selected_features = select_features(clf, X_train[:TRAINING_PERIOD], y_train[:TRAINING_PERIOD])
+
 # train and predict
 clf.fit(X_train, y_train)
 predict_proba = clf.predict_proba(X_test)

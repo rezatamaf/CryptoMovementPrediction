@@ -32,3 +32,10 @@ class SentimentProcessor:
         offset = 0.5  # to avoid zero division
         df[f'{col_prefix}_pos_neg_ratio'] = np.log((n_positive + offset) / (n_negative + offset))
         return df
+
+
+def select_features(clf, X, y, n_features=10):
+    clf.fit(X, y)
+    sorted_idx = clf.feature_importances_.argsort()[::-1][:n_features]
+    selected_cols = X.columns[sorted_idx].values.tolist()
+    return selected_cols
