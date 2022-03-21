@@ -7,6 +7,9 @@ import re
 import pandas as pd
 import pygsheets
 from sklearn.model_selection import train_test_split
+from pandas.api.types import is_object_dtype
+
+from sentiment.constant import NLPDataConstants
 
 
 class Utils:
@@ -75,6 +78,25 @@ class Utils:
             dfs.append(json_data)
         data_df = pd.concat(dfs, sort=False).fillna(0)
         return Utils.parse_date(data_df)
+
+    @staticmethod
+    def get_csv_by_date(data_dir: str, date: str):
+        if date is None:
+            date = Utils.datetime_to_str(dt.datetime.today() - dt.timedelta(1))
+        files = glob.glob(f'{data_dir}/*{date}.csv')
+        if len(files) == 0:
+            raise IndexError("No data found in selected date!")
+        elif len(files) > 1:
+            raise ValueError("Duplicate data in selected date are detected!")
+        file = files[0]
+        return file
+
+    @staticmethod
+    def check_text_df_validness(df: pd.DataFrame):
+        if (is_object_dtype(df.date)) or (df.date.isnull().any()):
+            raise ValueError("Date column contain NaN or mixed with other data, please check the csv file!")
+        if not df[NLPDataConstants.COL_NAMES['ARTICLE']].is_unique:
+            logging.warning("Found some duplicated article!")
 
     @staticmethod
     def split_data(df: pd.DataFrame) -> tuple:
