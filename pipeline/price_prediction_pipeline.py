@@ -25,7 +25,8 @@ PREDICTION_HISTORY_WS_NAME = 'Prediction History'
 # model constants
 MODEL_PARAM_PATH = '/content/drive/MyDrive/CryptoModule/model/optimized_params/0.683_accuracy_2022-03-05.json'
 MODEL_THRESHOLD = 0.5
-TRAINING_PERIOD = 30  # how many past days are used for training
+MODELING_PERIOD = 200  # how many past days are used for modeling
+EVALUATION_PERIOD = 60
 TODAY_REFERENCE = '2022-02-05'  # set as None to set today's date as reference
 
 # set logging config
@@ -38,15 +39,16 @@ data_loader = DataLoader(twitter_sentiment_dir=TWITTER_SENTIMENT_DIR,
                          gtrend_dir=GTREND_DIR,
                          glassnode_api_path=GLASSNODE_API_PATH,
                          binance_price_dir=BINANCE_PRICE_DIR)
-df = data_loader.run(TRAINING_PERIOD, TODAY_REFERENCE)
+df = data_loader.run(MODELING_PERIOD, TODAY_REFERENCE)
 X_train, X_test, y_train = Utils.split_data(df)
 # load model
 model = Model()
 # feature selection
-selected_features = select_features(clf=model.get(), X=X_train[:TRAINING_PERIOD], y=y_train[:TRAINING_PERIOD])
+selected_features = select_features(clf=model.get(), X=X_train[:-EVALUATION_PERIOD], y=y_train[:-EVALUATION_PERIOD])
 X_with_selected_features = X_train[selected_features]
 # HPO
-tuned_hyperparams, eval_metrics = fine_tune_model(model.clf, X_with_selected_features, y_train, TRAINING_PERIOD,
+training_period = MODELING_PERIOD - EVALUATION_PERIOD
+tuned_hyperparams, eval_metrics = fine_tune_model(model.clf, X_with_selected_features, y_train, training_period,
                                                   date_column='date', n_trials=20)
 print(eval_metrics)
 
