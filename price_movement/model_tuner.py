@@ -163,7 +163,7 @@ def hpo_objective(trial, clf, X, y, date_column, split_date, cv):
 
     preds, actuals = cv_train(X, y, cv, date_column, split_date, clf, clf_params=params)
     pred_class = [j > 0.5 for j in preds]
-    return f1_score(actuals, pred_class, average='macro')
+    return f1_score(actuals.astype(bool), pred_class, average='macro')
 
 
 def run_hpo(clf, X, y, date_column, split_date, cv, n_trials):
