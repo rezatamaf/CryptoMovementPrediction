@@ -8,3 +8,4 @@ class ModelConstants:
 class NLPDataConstants:
     COL_NAMES = {'DATE': 'date', 'TITLE': 'title', 'ARTICLE': 'article', 'MEDIA': 'media'}
     COL_DTYPES = {'article': str, 'title': str, 'media': str}
+

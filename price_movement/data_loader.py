@@ -91,7 +91,9 @@ class DataLoader:
                  btcnews_sentiment_dir: str,
                  gtrend_dir: str,
                  binance_price_dir: str,
-                 glassnode_api_path: str
+                 glassnode_api_path: str,
+                 influencer_raw_dir: str,
+                 influencer_sentiment_dir: str
                  ):
         self.twitter_sentiment_dir = twitter_sentiment_dir
         self.cnn_sentiment_dir = cnn_sentiment_dir
@@ -99,6 +101,8 @@ class DataLoader:
         self.gtrend_dir = gtrend_dir
         self.binance_price_dir = binance_price_dir
         self.glassnode_api_path = glassnode_api_path
+        self.influencer_raw_dir = influencer_raw_dir
+        self.influencer_sentiment_dir = influencer_sentiment_dir
         self.twitter_positive_sentiment = 0
         self.twitter_negative_sentiment = 0
         self.news_sentiment = 0
@@ -112,10 +116,12 @@ class DataLoader:
         gtrend_df = self._load_gtrend(self.gtrend_dir, training_period, today_reference)
         btcnews_df = self._load_sentiment(self.btcnews_sentiment_dir, training_period, today_reference)
         fundamental_df = self._load_fundamental(self.glassnode_api_path, twitter_df.index)
+        influencer_df = self._load_influencer(self.influencer_raw_dir, self.influencer_sentiment_dir,
+                                              training_period, today_reference)
         price_df = self._load_price(self.binance_price_dir, training_period, today_reference)
 
         # concat all data to one dataframe
-        dfs = [twitter_df, cnn_df, btcnews_df, gtrend_df, fundamental_df, price_df]
+        dfs = [twitter_df, cnn_df, btcnews_df, gtrend_df, fundamental_df, influencer_df, price_df]
         data_df = pd.concat(dfs, join='outer', axis=1).fillna(0)[1:]  # drop 1st row after lagged preprocessing
         complete_date_idx = Utils.get_relevant_dates(training_period, today_reference)[1:]
         data_df = data_df.reindex(complete_date_idx).fillna(0)  # add missing date if any
@@ -154,7 +160,6 @@ class DataLoader:
     @staticmethod
     def _load_gtrend(data_dir: str, training_period: int, today_reference: str) -> pd.DataFrame:
         gtrend_df = Utils.load_relevant_jsons(data_dir, training_period, today_reference)
-
         adj_index = [i + dt.timedelta(3) for i in gtrend_df.index]
         gtrend_df.index = adj_index
         gtrend_df.index.name = 'date'
@@ -171,3 +176,8 @@ class DataLoader:
         df = pd.DataFrame({i.split("/")[1]: metric_loader.get_metric(i) for i in end_points})
         df.index.names = ['date']
         return df
+
+    @staticmethod
+    def _load_influencer(raw_dir: str, sentiment_dir: str, training_period: int, today_reference: str):
+        influencer_sentiment_df = DataLoader._load_sentiment(sentiment_dir, training_period, today_reference)
+        return influencer_sentiment_df

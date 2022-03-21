@@ -12,10 +12,12 @@ DATA_DIR = '/content/drive/MyDrive/CryptoDataset'
 TWITTER_SENTIMENT_DIR = f'{DATA_DIR}/sentiment/twitter'
 CNN_SENTIMENT_DIR = f'{DATA_DIR}/sentiment/cnn'
 BTC_NEWS_SENTIMENT_DIR = f'{DATA_DIR}/sentiment/bitcoin_news'
+INFLUENCER_SENTIMENT_DIR = f'{DATA_DIR}/sentiment/twitter_influencers'
 GTREND_DIR = f'{DATA_DIR}/crawled_dataset/google_trends'
 BINANCE_PRICE_DIR = f'{DATA_DIR}/crawled_dataset/binance_price'
+INFLUENCER_RAW_DIR = f'{DATA_DIR}/crawled_dataset/twitter_influencers'
 PREDICTION_OUTPUT_DIR = f'{DATA_DIR}/json_price_movement_prediction'
-GLASSNODE_API_PATH = ''  # change this with your own
+GLASSNODE_API_PATH = f'{DATA_DIR}/fundamental/glassnode_api_key.json'  # change this with your own
 # gsheet related constants
 GSERVICE_CREDENTIAL = '/content/sylvan-epoch-255012-ca8e2747c1fa.json'  # change this with your own
 GSHEET_NAME = 'ResultTable'  # make sure gservice account above has access to the gsheet
