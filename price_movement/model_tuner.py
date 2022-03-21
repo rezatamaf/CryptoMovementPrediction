@@ -183,6 +183,7 @@ def run_hpo(clf, X, y, date_column, split_date, cv, n_trials):
 def fine_tune_model(uninit_clf, X, y, train_period, holdout_period=14, date_column='date', n_trials=20):
     hpo_split_date = X.index[train_period].date()
     holdout_split_date = X.index[-holdout_period].date()
+    X.index.name = date_column
     X = X.reset_index()
     y = y.reset_index(drop=True)
     X_train, _, y_train, _ = train_test_split(X, y, test_size=holdout_period, shuffle=False)
