@@ -17,7 +17,7 @@ class Model:
             model_params = self._get_model_params()
             clf = self.clf(**model_params)
         elif params is not None:
-            clf = self.clf(**self.params)
+            clf = self.clf(**params)
         else:
             clf = self.clf()
         return clf
