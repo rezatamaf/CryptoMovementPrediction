@@ -180,4 +180,5 @@ class DataLoader:
     @staticmethod
     def _load_influencer(raw_dir: str, sentiment_dir: str, training_period: int, today_reference: str):
         influencer_sentiment_df = DataLoader._load_sentiment(sentiment_dir, training_period, today_reference)
+        influencer_sentiment_df = influencer_sentiment_df.rename({'total_docs': 'influencer_appearances'}, axis=1)
         return influencer_sentiment_df
