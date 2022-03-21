@@ -1,5 +1,3 @@
-import datetime as dt
-import glob
 import logging
 import json
 
@@ -76,14 +74,7 @@ class Inferrer:
 
     @staticmethod
     def _load_df(data_dir: str, date: str) -> pd.DataFrame:
-        if date is None:
-            date = Utils.datetime_to_str(dt.datetime.today() - dt.timedelta(1))
-        files = glob.glob(f'{data_dir}/*{date}.csv')
-        if len(files) == 0:
-            raise IndexError("No data found in selected date!")
-        elif len(files) > 1:
-            raise ValueError("Duplicate data in selected date are detected!")
-        file = files[0]
+        file = Utils.get_csv_by_date(data_dir, date)
         column_names = list(NLPDataConstants.COL_NAMES.values())
         column_dtypes = NLPDataConstants.COL_DTYPES.copy()
         try:
