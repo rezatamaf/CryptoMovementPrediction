@@ -5,7 +5,9 @@ from price_movement.data_loader import DataLoader
 from price_movement.util import Utils
 
 
-def generate_output(data_loader: DataLoader, predict_proba: np.array, model_threshold: float) -> dict:
+def generate_output(data_loader: DataLoader, predict_proba: np.array,
+                    model_threshold: float, selected_features: list,
+                    eval_metrics: dict) -> dict:
     price_up_prob = predict_proba[0, 1]
     prediction = 'Up' if price_up_prob > model_threshold else 'Down'
     utc_date = data_loader.test_date  # date(UTC)
@@ -19,6 +21,8 @@ def generate_output(data_loader: DataLoader, predict_proba: np.array, model_thre
               'twitter_positive_sentiment': int(data_loader.twitter_positive_sentiment),
               'twitter_negative_sentiment': int(data_loader.twitter_negative_sentiment),
               'news_sentiment': round(float(data_loader.news_sentiment), 2),
-              'google_trends': int(data_loader.google_trends)
+              'google_trends': int(data_loader.google_trends),
+              'selected_features': selected_features,
               }
+    output.update(eval_metrics)
     return output

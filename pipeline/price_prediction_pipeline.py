@@ -48,12 +48,15 @@ X_with_selected_features = X_train[selected_features]
 # HPO
 tuned_hyperparams, eval_metrics = fine_tune_model(model.clf, X_with_selected_features, y_train, TRAINING_PERIOD,
                                                   date_column='date', n_trials=20)
+print(eval_metrics)
+
 # train and predict
 tuned_clf = model.load_param(params=tuned_hyperparams)
 tuned_clf.fit(X_train, y_train)
 predict_proba = tuned_clf.predict_proba(X_test)
 # generate model output
-output = generate_output(data_loader, predict_proba, model_threshold=MODEL_THRESHOLD)
+output = generate_output(data_loader, predict_proba, model_threshold=MODEL_THRESHOLD,
+                         selected_features=selected_features, eval_metrics=eval_metrics)
 print(output)
 
 # insert model output to gsheet
