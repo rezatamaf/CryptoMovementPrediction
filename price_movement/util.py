@@ -106,12 +106,21 @@ class Utils:
         return X_train, X_test, y_train
 
     @staticmethod
-    def dump_output(model_output: dict, out_dir: str):
+    def dump_prediction_output(model_output: dict, out_dir: str):
         dir_name = out_dir
         file_name = f'prediction_{model_output["date"]}.json'
         path = f'{dir_name}/{file_name}'
         with open(path, 'w') as f:
             json.dump(model_output, f)
+
+    @staticmethod
+    def dump_processing_output(model_output: dict, out_dir: str, coin_symbol='btc'):
+        media_source = out_dir.split('/')[-1].lower()
+        file_name = f'{coin_symbol}_{media_source}_sentiment_{model_output["date"]}.json'
+        path = f'{out_dir}/{file_name}'
+        with open(path, 'w') as f:
+            json.dump(model_output, f)
+        return model_output
 
 
 class GSheetUpdater:

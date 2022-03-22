@@ -1,5 +1,4 @@
 import logging
-import json
 
 import numpy as np
 import pandas as pd
@@ -67,7 +66,7 @@ class Inferrer:
         # generate json output
         output = self.generate_output(predicted_sentiment, df)
         logging.info("Dump result to gdrive ...")
-        self.dump_output(output, output_dir)
+        Utils.dump_processing_output(output, output_dir)
         logging.info("DONE\n")
         return output
 
@@ -150,11 +149,3 @@ class Inferrer:
                   'sentiment': sentiment_dist}
         return output
 
-    @staticmethod
-    def dump_output(model_output: dict, out_dir: str, coin_symbol='btc'):
-        media_source = out_dir.split('/')[-1].lower()
-        file_name = f'{coin_symbol}_{media_source}_sentiment_{model_output["date"]}.json'
-        path = f'{out_dir}/{file_name}'
-        with open(path, 'w') as f:
-            json.dump(model_output, f)
-        return model_output

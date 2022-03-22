@@ -73,4 +73,4 @@ gs_updater.update(model_output=output,
                   tomorrow_prediction_ws_name=TOMORROW_PREDICTION_WS_NAME)
 
 # dump model output as json
-Utils.dump_output(output, out_dir=PREDICTION_OUTPUT_DIR)
+Utils.dump_prediction_output(output, out_dir=PREDICTION_OUTPUT_DIR)
