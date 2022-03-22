@@ -47,14 +47,13 @@ GSHEET_NAME = 'ResultTable'
 # GSHEET_NAME = 'Prediction Result'  # make sure gservice account above has access to the gsheet
 PREDICTION_RESULT_WS_NAME = 'Prediction Result'
 TOMORROW_PREDICTION_WS_NAME = 'Tomorrow Prediction'
-PREDICTION_HISTORY_WS_NAME = 'Prediction History'
 
 # price model constants
-MODEL_PARAM_PATH = '/content/drive/MyDrive/CryptoModule/model/optimized_params/2022-03-12_trend_data (0.756).json'
 MODEL_THRESHOLD = 0.5
-MODELING_PERIOD = 225  # how many past days are used for modeling
-EVALUATION_PERIOD = 60
 TODAY_REFERENCE = dt.datetime.today().date().strftime("%Y-%m-%d")
+MODELING_PERIOD = Utils.count_usable_data(TWITTER_SENTIMENT_DIR, TODAY_REFERENCE)  # total days used for modeling
+EVALUATION_PERIOD = 60  # part of total days used for HPO evaluation
+TEST_PERIOD = 14  # part of total days used for HPO testing
 
 ready = True
 
@@ -99,7 +98,7 @@ X_with_selected_features = X_train[selected_features]
 # HPO
 training_period = MODELING_PERIOD - EVALUATION_PERIOD
 tuned_hyperparams, eval_metrics = fine_tune_model(model.clf, X_with_selected_features, y_train, training_period,
-                                                  holdout_period=14, date_column='date', n_trials=20)
+                                                  holdout_period=TEST_PERIOD, date_column='date', n_trials=20)
 print(eval_metrics)
 
 # train and predict
