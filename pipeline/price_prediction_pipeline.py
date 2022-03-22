@@ -39,7 +39,7 @@ data_loader = DataLoader(twitter_sentiment_dir=TWITTER_SENTIMENT_DIR,
                          cnn_sentiment_dir=CNN_SENTIMENT_DIR,
                          btcnews_sentiment_dir=BTC_NEWS_SENTIMENT_DIR,
                          gtrend_dir=GTREND_DIR,
-                         influencer_raw_dir=INFLUENCER_RAW_DIR,
+                         influence_score_dir=INFLUENCER_RAW_DIR,
                          influencer_sentiment_dir=INFLUENCER_SENTIMENT_DIR,
                          glassnode_api_path=GLASSNODE_API_PATH,
                          binance_price_dir=BINANCE_PRICE_DIR)

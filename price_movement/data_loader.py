@@ -92,7 +92,7 @@ class DataLoader:
                  gtrend_dir: str,
                  binance_price_dir: str,
                  glassnode_api_path: str,
-                 influencer_raw_dir: str,
+                 influence_score_dir: str,
                  influencer_sentiment_dir: str
                  ):
         self.twitter_sentiment_dir = twitter_sentiment_dir
@@ -101,7 +101,7 @@ class DataLoader:
         self.gtrend_dir = gtrend_dir
         self.binance_price_dir = binance_price_dir
         self.glassnode_api_path = glassnode_api_path
-        self.influencer_raw_dir = influencer_raw_dir
+        self.influence_score_dir = influence_score_dir
         self.influencer_sentiment_dir = influencer_sentiment_dir
         self.twitter_positive_sentiment = 0
         self.twitter_negative_sentiment = 0
@@ -116,7 +116,7 @@ class DataLoader:
         gtrend_df = self._load_gtrend(self.gtrend_dir, training_period, today_reference)
         btcnews_df = self._load_sentiment(self.btcnews_sentiment_dir, training_period, today_reference)
         fundamental_df = self._load_fundamental(self.glassnode_api_path, twitter_df.index)
-        influencer_df = self._load_influencer(self.influencer_raw_dir, self.influencer_sentiment_dir,
+        influencer_df = self._load_influencer(self.influence_score_dir, self.influencer_sentiment_dir,
                                               training_period, today_reference)
         price_df = self._load_price(self.binance_price_dir, training_period, today_reference)
 
@@ -178,7 +178,9 @@ class DataLoader:
         return df
 
     @staticmethod
-    def _load_influencer(raw_dir: str, sentiment_dir: str, training_period: int, today_reference: str):
+    def _load_influencer(influence_score_dir: str, sentiment_dir: str, training_period: int, today_reference: str):
         influencer_sentiment_df = DataLoader._load_sentiment(sentiment_dir, training_period, today_reference)
         influencer_sentiment_df = influencer_sentiment_df.rename({'total_docs': 'influencer_appearances'}, axis=1)
-        return influencer_sentiment_df
+        influence_score_df = Utils.load_relevant_jsons(influence_score_dir, training_period, today_reference)
+        dfs = [influence_score_df, influencer_sentiment_df]
+        return pd.concat(dfs, join='outer', axis=1).fillna(0)
