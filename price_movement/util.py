@@ -113,10 +113,11 @@ class Utils:
     @staticmethod
     def check_text_df_validity(df: pd.DataFrame):
         date_column_exist = 'date' in df.columns
-        date_column_type_is_object = is_object_dtype(df.date)
-        there_is_null_date = df.date.isnull().any()
-        if date_column_exist and (date_column_type_is_object or there_is_null_date):
-            raise ValueError("Date column contain NaN or mixed with other data, please check the csv file!")
+        if date_column_exist:
+            date_column_type_is_object = is_object_dtype(df.date)
+            there_is_null_date = df.date.isnull().any()
+            if date_column_type_is_object or there_is_null_date:
+                raise ValueError("Date column contain NaN or mixed with other data, please check the csv file!")
         if not df[NLPDataConstants.COL_NAMES['ARTICLE']].is_unique:
             logging.warning("Found some duplicated article!")
 
