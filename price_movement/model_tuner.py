@@ -153,11 +153,11 @@ def hpo_objective(trial, clf, X, y, date_column, split_date, cv):
         "lambda": trial.suggest_float("lambda", 1e-8, 1.0, log=True),
         "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
         'n_estimators': trial.suggest_int('n_estimators', 350, 1000),
-        'max_depth': trial.suggest_int('max_depth', 3, 10),
+        'max_depth': trial.suggest_int('max_depth', 2, 6),
         'learning_rate': trial.suggest_uniform('learning_rate', 0.01, 0.10),
         'subsample': trial.suggest_uniform('subsample', 0.50, 0.90),
         'colsample_bytree': trial.suggest_uniform('colsample_bytree', 0.50, 0.90),
-        'gamma': trial.suggest_int('gamma', 0, 20),
+        'gamma': trial.suggest_int('gamma', 8, 15),
         'missing': -999
     }
 
