@@ -24,7 +24,7 @@ class InfluenceCalculator:
         total_influence_score = influencer_df['influencer_rank_average'].sum()
         output = InfluenceCalculator._generate_output(total_influence_score, date)
         logging.info("Dumping result to gdrive ...")
-        Utils.dump_processing_output(output, output_dir)
+        Utils.dump_processing_output(output, output_dir, suffix=None)
         logging.info("DONE\n")
         return output
 

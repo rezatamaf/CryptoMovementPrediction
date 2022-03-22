@@ -123,9 +123,12 @@ class Utils:
             json.dump(model_output, f)
 
     @staticmethod
-    def dump_processing_output(model_output: dict, out_dir: str, coin_symbol='btc'):
+    def dump_processing_output(model_output: dict, out_dir: str, coin_symbol='btc', suffix=None):
         media_source = out_dir.split('/')[-1].lower()
-        file_name = f'{coin_symbol}_{media_source}_sentiment_{model_output["date"]}.json'
+        if suffix is not None:
+            file_name = f'{coin_symbol}_{media_source}_{suffix}_{model_output["date"]}.json'
+        else:
+            file_name = f'{coin_symbol}_{media_source}_{model_output["date"]}.json'
         path = f'{out_dir}/{file_name}'
         with open(path, 'w') as f:
             json.dump(model_output, f)

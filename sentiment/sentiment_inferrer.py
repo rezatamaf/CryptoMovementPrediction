@@ -67,7 +67,7 @@ class Inferrer:
         # generate json output
         output = self.generate_output(predicted_sentiment, df)
         logging.info("Dumping result to gdrive ...")
-        Utils.dump_processing_output(output, output_dir)
+        Utils.dump_processing_output(output, output_dir, suffix='sentiment')
         logging.info("DONE\n")
         return output
 
