@@ -12,7 +12,9 @@ class InfluenceCalculator:
         influencer_list_col_dtype = {'twitter_screen_name': str, 'influencer_rank_average': float}
         logging.info(f"Loading influencer list ...")
         influencer_list_df = InfluenceCalculator._load_df(influencer_list_dir, date,
-                                                          influencer_list_col_name, influencer_list_col_dtype)
+                                                          influencer_list_col_name,
+                                                          influencer_list_col_dtype,
+                                                          alternative_date='2022-03-21')
         influencer_tweet_col_name = ['username_source', 'tweet_id']
         influencer_tweet_col_dtype = {'username_source': str, 'tweet_id': str}
         logging.info(f"Loading influencer tweets ...")
@@ -29,12 +31,20 @@ class InfluenceCalculator:
         return output
 
     @staticmethod
-    def _load_df(data_dir: str, date: str, column_names: list, column_dtypes: dict) -> pd.DataFrame:
-        file = Utils.get_csv_by_date(data_dir, date)
+    def _load_df(data_dir: str, date: str, column_names: list,
+                 column_dtypes: dict, alternative_date=None) -> pd.DataFrame:
         try:
-            df = pd.read_csv(file, usecols=column_names, dtype=column_dtypes)
-        except ValueError:
+            file = Utils.get_csv_by_date(data_dir, date)
+        except IndexError as e:
+            logging.warning(e)
+            if alternative_date is not None:
+                logging.info(f"Trying alternative date {alternative_date}")
+                file = Utils.get_csv_by_date(data_dir, alternative_date)
+            else:
+                raise
+        except Exception:
             raise
+        df = pd.read_csv(file, usecols=column_names, dtype=column_dtypes)
         return df
 
     @staticmethod
