@@ -1,6 +1,7 @@
 from functools import partial
 from dateutil.relativedelta import *
 from sklearn.metrics import accuracy_score, f1_score
+import logging
 import numpy as np
 import optuna
 from sklearn.model_selection import train_test_split
@@ -140,8 +141,6 @@ def evaluate_on_window(predictions, actuals, threshold=0.5, window_size=7):
         rolling_acc.append(accuracy_score(actual, pred))
     mean_acc = np.mean(rolling_acc)
     std_acc = np.std(rolling_acc)
-    print(f'{window_size}-days window accuracy avg: {np.round(mean_acc, 2)}')
-    print(f'{window_size}-days window accuracy std: {np.round(std_acc, 2)}\n')
     return mean_acc, std_acc
 
 
@@ -169,6 +168,7 @@ def hpo_objective(trial, clf, X, y, date_column, split_date, cv):
 def run_hpo(clf, X, y, date_column, split_date, cv, n_trials):
     obj_fun = partial(hpo_objective, clf=clf, X=X, y=y, date_column=date_column, split_date=split_date, cv=cv)
     study = optuna.create_study(direction="maximize")
+    logging.info("Tuning Hyper-parameter ...")
     study.optimize(obj_fun, n_trials=n_trials)
     print("Number of finished trials: {}".format(len(study.trials)))
     print("Best trial:")
@@ -193,11 +193,14 @@ def fine_tune_model(uninit_clf, X, y, train_period, holdout_period=14, date_colu
     data_preds, data_actuals = cv_train(X_train, y_train, tscv, date_column, hpo_split_date,
                                         uninit_clf, clf_params=trial.params)
     mean_acc, std_acc = evaluate_on_window(data_preds, data_actuals, window_size=7)
+    print(f'7-days window eval set accuracy avg: {np.round(mean_acc, 2)}')
+    print(f'7-days window eval set accuracy std: {np.round(std_acc, 2)}\n')
     # eval on holdout
     holdout_preds, holdout_actuals = cv_train(X, y, tscv, date_column, holdout_split_date,
                                               uninit_clf, clf_params=trial.params)
-
     holdout_mean_acc, holdout_std_acc = evaluate_on_window(holdout_preds, holdout_actuals, window_size=7)
+    print(f'7-days window test set accuracy avg: {np.round(holdout_mean_acc, 2)}')
+    print(f'7-days window test set accuracy std: {np.round(holdout_std_acc, 2)}\n')
     eval_metrics = {'eval_acc': mean_acc, 'eval_acc_7days_std': std_acc,
                     'holdout_eval_acc': holdout_mean_acc, 'holdout_eval_acc_7days_std': holdout_std_acc}
     return trial.params, eval_metrics

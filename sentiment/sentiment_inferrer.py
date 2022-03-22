@@ -65,7 +65,7 @@ class Inferrer:
         logging.info("Processing output result ...")
         # generate json output
         output = self.generate_output(predicted_sentiment, df)
-        logging.info("Dump result to gdrive ...")
+        logging.info("Dumping result to gdrive ...")
         Utils.dump_processing_output(output, output_dir)
         logging.info("DONE\n")
         return output
@@ -148,4 +148,3 @@ class Inferrer:
                   'total_docs': len(unsampled_df),
                   'sentiment': sentiment_dist}
         return output
-
