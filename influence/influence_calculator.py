@@ -35,7 +35,7 @@ class InfluenceCalculator:
             df = pd.read_csv(file, usecols=column_names, dtype=column_dtypes)
         except ValueError:
             raise
-        Utils.check_text_df_validness(df)
+        Utils.check_text_df_validity(df)
         return df
 
     @staticmethod

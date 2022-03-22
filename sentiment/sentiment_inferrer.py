@@ -84,7 +84,7 @@ class Inferrer:
                 df = pd.read_csv(file, usecols=column_names, dtype=column_dtypes, parse_dates=['date'])
             else:
                 raise
-        Utils.check_text_df_validness(df)
+        Utils.check_text_df_validity(df)
         return df
 
     @staticmethod
