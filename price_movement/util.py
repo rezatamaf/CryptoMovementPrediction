@@ -7,9 +7,6 @@ import re
 import pandas as pd
 import pygsheets
 from sklearn.model_selection import train_test_split
-from pandas.api.types import is_object_dtype
-
-from sentiment.constant import NLPDataConstants
 
 
 class Utils:
@@ -109,17 +106,6 @@ class Utils:
             raise ValueError("Duplicate data in selected date are detected!")
         file = files[0]
         return file
-
-    @staticmethod
-    def check_text_df_validity(df: pd.DataFrame):
-        date_column_exist = 'date' in df.columns
-        if date_column_exist:
-            date_column_type_is_object = is_object_dtype(df.date)
-            there_is_null_date = df.date.isnull().any()
-            if date_column_type_is_object or there_is_null_date:
-                raise ValueError("Date column contain NaN or mixed with other data, please check the csv file!")
-        if not df[NLPDataConstants.COL_NAMES['ARTICLE']].is_unique:
-            logging.warning("Found some duplicated article!")
 
     @staticmethod
     def split_data(df: pd.DataFrame) -> tuple:

@@ -3,6 +3,7 @@ import logging
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from pandas.api.types import is_object_dtype
 
 from sentiment import bert_preprocessor, text_preprocessor
 from sentiment.constant import NLPDataConstants, ModelConstants
@@ -84,8 +85,17 @@ class Inferrer:
                 df = pd.read_csv(file, usecols=column_names, dtype=column_dtypes, parse_dates=['date'])
             else:
                 raise
-        Utils.check_text_df_validity(df)
+        Inferrer._check_text_df_validity(df)
         return df
+
+    @staticmethod
+    def _check_text_df_validity(df: pd.DataFrame):
+        date_column_type_is_object = is_object_dtype(df.date)
+        there_is_null_date = df.date.isnull().any()
+        if date_column_type_is_object or there_is_null_date:
+            raise ValueError("Date column contain NaN or mixed with other data, please check the csv file!")
+        if not df[NLPDataConstants.COL_NAMES['ARTICLE']].is_unique:
+            logging.warning("Found some duplicated article!")
 
     @staticmethod
     def preprocess_content(df: pd.DataFrame, content_col: str) -> pd.DataFrame:
