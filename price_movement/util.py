@@ -14,17 +14,36 @@ from sentiment.constant import NLPDataConstants
 
 class Utils:
     @staticmethod
+    def count_usable_data(data_dir: str, today_reference: str, offset=2):
+        today = Utils.get_reference_day_in_date(today_reference)
+        files = glob.glob(f'{data_dir}/*.json')
+        usable_files = [f for f in files if Utils.extract_file_date(f) <= today]
+        total_usable_data = len(usable_files) - offset
+        return total_usable_data
+
+    @staticmethod
+    def extract_file_date(filename: str):
+        file_date_str = Utils.extract_date_from_text(filename)
+        file_date = Utils.str_to_datetime(file_date_str).date()
+        return file_date
+
+    @staticmethod
     def get_relevant_dates(training_period: int, today_reference: str) -> pd.DatetimeIndex:
-        if today_reference is None:
-            today = dt.datetime.today().date()
-        else:
-            today = Utils.str_to_datetime(today_reference).date()
+        today = Utils.get_reference_day_in_date(today_reference)
         yesterday = today - dt.timedelta(1)
         day_offset = 2  # 1 day for lagged processing, 1 day for predicting
         start_date = today - dt.timedelta(training_period + day_offset)
         end_date = yesterday
         relevant_dates = pd.date_range(start_date, end_date, freq='d')
         return relevant_dates
+
+    @staticmethod
+    def get_reference_day_in_date(reference_day: str = None):
+        if reference_day is None:
+            day_in_date = dt.datetime.today().date()
+        else:
+            day_in_date = Utils.str_to_datetime(reference_day).date()
+        return day_in_date
 
     @staticmethod
     def get_relevant_files(data_dir: str, training_period: int, today_reference: str) -> list:
