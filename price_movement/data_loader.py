@@ -1,4 +1,6 @@
 import json
+import logging
+
 import requests
 import datetime as dt
 import numpy as np
@@ -141,14 +143,16 @@ class DataLoader:
 
     @staticmethod
     def _load_sentiment(data_dir: str, training_period: int, today_reference: str) -> pd.DataFrame:
-        sentiment_df = Utils.load_relevant_jsons(data_dir, training_period, today_reference)
         col_prefix = data_dir.split('/')[-1].lower()  # use dir_name as prefix
+        logging.info(f"Loading {col_prefix} sentiment data ...")
+        sentiment_df = Utils.load_relevant_jsons(data_dir, training_period, today_reference)
         sentiment_df = SentimentProcessor.add_polarity_score(sentiment_df, col_prefix)
         sentiment_df = SentimentProcessor.add_pos_neg_ratio(sentiment_df, col_prefix)
         return sentiment_df
 
     @staticmethod
     def _load_price(data_dir: str, training_period: int, today_reference: str) -> pd.DataFrame:
+        logging.info("Loading daily price data ...")
         price_df = Utils.load_relevant_jsons(data_dir, training_period, today_reference)
         close_price = price_df['close_price']
         tomorrow_close_price = close_price.shift(-1)
@@ -159,6 +163,7 @@ class DataLoader:
 
     @staticmethod
     def _load_gtrend(data_dir: str, training_period: int, today_reference: str) -> pd.DataFrame:
+        logging.info("Loading google trend data ...")
         gtrend_df = Utils.load_relevant_jsons(data_dir, training_period, today_reference)
         adj_index = [i + dt.timedelta(3) for i in gtrend_df.index]
         gtrend_df.index = adj_index
@@ -170,6 +175,7 @@ class DataLoader:
         with open(api_path) as json_file:
             loaded_json = json.load(json_file)
         api_key = loaded_json['api_key']
+        logging.info("Retrieving fundamental data ...")
         metric_loader = FundamentalMetricLoader(reference_date_idx, api_key)
         end_points = ['indicators/sopr', 'transactions/rate', 'mining/hash_rate_mean', 'addresses/active_count',
                       'blockchain/utxo_created_value_sum', 'blockchain/utxo_spent_value_sum']
@@ -179,6 +185,7 @@ class DataLoader:
 
     @staticmethod
     def _load_influencer(influence_score_dir: str, sentiment_dir: str, training_period: int, today_reference: str):
+        logging.info("Loading twitter influencer data ...")
         influencer_sentiment_df = DataLoader._load_sentiment(sentiment_dir, training_period, today_reference)
         influencer_sentiment_df = influencer_sentiment_df.rename({'total_docs': 'influencer_appearances'}, axis=1)
         influence_score_df = Utils.load_relevant_jsons(influence_score_dir, training_period, today_reference)
