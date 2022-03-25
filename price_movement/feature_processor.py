@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.inspection import permutation_importance
 from sklearn.preprocessing import LabelEncoder
 
 
@@ -48,8 +49,13 @@ class FeatureProcessor:
         return encoded_labels
 
 
-def select_features(clf, X, y, n_features=10):
+def select_features(clf, X, y, n_features=10, mode='permutation'):
     clf.fit(X, y)
-    sorted_idx = clf.feature_importances_.argsort()[::-1][:n_features]
+    if mode == 'permutation':
+        result = permutation_importance(clf, X, y, n_repeats=10, random_state=0)
+        feature_importance = result.importances_mean
+    else:
+        feature_importance = clf.feature_importances_
+    sorted_idx = feature_importance.argsort()[::-1][:n_features]
     selected_cols = X.columns[sorted_idx].values.tolist()
     return selected_cols
