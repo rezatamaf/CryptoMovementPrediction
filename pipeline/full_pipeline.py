@@ -94,17 +94,18 @@ X_train, X_test, y_train = Utils.split_data(df)
 model = Model()
 # feature selection
 selected_features = select_features(clf=model.get(), X=X_train[:-EVALUATION_PERIOD], y=y_train[:-EVALUATION_PERIOD])
-X_with_selected_features = X_train[selected_features]
+X_train_with_selected_features = X_train[selected_features]
+X_test_with_selected_features = X_test[selected_features]
 # HPO
 training_period = MODELING_PERIOD - EVALUATION_PERIOD
-tuned_hyperparams, eval_metrics = fine_tune_model(model.clf, X_with_selected_features, y_train, training_period,
+tuned_hyperparams, eval_metrics = fine_tune_model(model.clf, X_train_with_selected_features, y_train, training_period,
                                                   holdout_period=TEST_PERIOD, date_column='date', n_trials=20)
 print(eval_metrics)
 
 # train and predict
 tuned_clf = model.load_param(params=tuned_hyperparams)
-tuned_clf.fit(X_train, y_train)
-predict_proba = tuned_clf.predict_proba(X_test)
+tuned_clf.fit(X_train_with_selected_features, y_train)
+predict_proba = tuned_clf.predict_proba(X_test_with_selected_features)
 # generate model output
 output = generate_output(data_loader, predict_proba, model_threshold=MODEL_THRESHOLD,
                          selected_features=selected_features, eval_metrics=eval_metrics)

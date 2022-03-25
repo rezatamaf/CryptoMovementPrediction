@@ -8,7 +8,7 @@ import pandas as pd
 from iso8601 import ParseError, parse_date
 
 from price_movement.util import Utils
-from price_movement.feature_processor import SentimentProcessor
+from price_movement.feature_processor import FeatureProcessor
 
 
 class GlassnodeClient:
@@ -146,8 +146,8 @@ class DataLoader:
         col_prefix = data_dir.split('/')[-1].lower()  # use dir_name as prefix
         logging.info(f"Loading {col_prefix} sentiment data ...")
         sentiment_df = Utils.load_relevant_jsons(data_dir, training_period, today_reference)
-        sentiment_df = SentimentProcessor.add_polarity_score(sentiment_df, col_prefix)
-        sentiment_df = SentimentProcessor.add_pos_neg_ratio(sentiment_df, col_prefix)
+        sentiment_df = FeatureProcessor.add_polarity_score(sentiment_df, col_prefix)
+        sentiment_df = FeatureProcessor.add_pos_neg_ratio(sentiment_df, col_prefix)
         return sentiment_df
 
     @staticmethod
@@ -155,9 +155,14 @@ class DataLoader:
         logging.info("Loading daily price data ...")
         price_df = Utils.load_relevant_jsons(data_dir, training_period, today_reference)
         close_price = price_df['close_price']
+        logging.info("Processing price data features ...")
         tomorrow_close_price = close_price.shift(-1)
-        price_df['price_diff'] = np.log((close_price + 0.5) / (close_price.shift(1) + 0.5))
+        yesterday_close_price = close_price.shift(1)
+        ereyesterday_close_price = close_price.shift(2)
+        price_df['1day_price_log_ratio'] = FeatureProcessor.get_log_ratio(close_price, yesterday_close_price)
         price_df['is_price_up'] = (tomorrow_close_price - close_price) > 0
+        price_df['last_three_days_movement'] = FeatureProcessor.get_past_sequence(price_df, col='is_price_up', n_days=3)
+        price_df['3days_price_log_ratio'] = FeatureProcessor.get_log_ratio(close_price, ereyesterday_close_price)
         price_df.loc[tomorrow_close_price.isnull(), 'is_price_up'] = np.NaN
         return price_df
 
