@@ -124,7 +124,7 @@ class DataLoader:
 
         # concat all data to one dataframe
         dfs = [twitter_df, cnn_df, btcnews_df, gtrend_df, fundamental_df, influencer_df, price_df]
-        data_df = pd.concat(dfs, join='outer', axis=1).fillna(0)[1:]  # drop 1st row after lagged preprocessing
+        data_df = pd.concat(dfs, join='outer', axis=1).fillna(0)[14:]  # drop 1st row after lagged preprocessing
         complete_date_idx = Utils.get_relevant_dates(training_period, today_reference)[1:]
         data_df = data_df.reindex(complete_date_idx).fillna(0)  # add missing date if any
 
@@ -158,6 +158,12 @@ class DataLoader:
         tomorrow_close_price = close_price.shift(-1)
         price_df['price_diff'] = np.log((close_price + 0.5) / (close_price.shift(1) + 0.5))
         price_df['is_price_up'] = (tomorrow_close_price - close_price) > 0
+
+        def past_price_up_proportion(df, n_days: int, col='price_rising'):
+            return [list(i).count(True) / n_days for i in df[col].rolling(n_days)]
+
+        price_df['7days_price_up_prop'] = past_price_up_proportion(price_df, 7)
+        price_df['14days_price_up_prop'] = past_price_up_proportion(price_df, 14)
         price_df.loc[tomorrow_close_price.isnull(), 'is_price_up'] = np.NaN
         return price_df
 
