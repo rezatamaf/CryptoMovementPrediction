@@ -159,7 +159,7 @@ class DataLoader:
         price_df['price_diff'] = np.log((close_price + 0.5) / (close_price.shift(1) + 0.5))
         price_df['is_price_up'] = (tomorrow_close_price - close_price) > 0
 
-        def past_price_up_proportion(df, n_days: int, col='price_rising'):
+        def past_price_up_proportion(df, n_days: int, col='is_price_up'):
             return [list(i).count(True) / n_days for i in df[col].rolling(n_days)]
 
         price_df['7days_price_up_prop'] = past_price_up_proportion(price_df, 7)
