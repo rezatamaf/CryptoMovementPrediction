@@ -167,7 +167,6 @@ class GSheetUpdater:
                                        worksheet_name: str, n_days=7):
         date_reference = Utils.shift_date_str(data_loader.test_date, days_lag=1)
         trend_df = data_loader.load_gtrend(data_loader.gtrend_dir, n_days, date_reference, adjust_index=False)
-        trend_df = Utils.adjust_date_index(trend_df, days_lag=1)
         trend_df = trend_df.reset_index()
         trend_df['date'] = trend_df['date'].dt.strftime('%Y-%m-%d')
         trend_df['trends'] = trend_df['trends'].apply(lambda x: round(x, 2))
