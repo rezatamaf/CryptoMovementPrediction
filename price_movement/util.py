@@ -8,6 +8,8 @@ import pandas as pd
 import pygsheets
 from sklearn.model_selection import train_test_split
 
+from price_movement.data_loader import DataLoader
+
 
 class Utils:
     @staticmethod
@@ -154,23 +156,33 @@ class GSheetUpdater:
         values = worksheet.get_all_values(returnas='matrix', **kwargs)
         return values
 
-    def update(self, model_output: dict,
+    def update(self, model_output: dict, data_loader: DataLoader,
                spreadsheet_name: str,
                prediction_result_ws_name: str,
-               tomorrow_prediction_ws_name: str):
+               tomorrow_prediction_ws_name: str,
+               historical_search_trend_ws_name: str,
+               historical_sentiment_ws_name: str):
         prediction_result_worksheet = self._get_worksheet(spreadsheet_name, prediction_result_ws_name)
         tomorrow_prediction_worksheet = self._get_worksheet(spreadsheet_name, tomorrow_prediction_ws_name)
+        historical_search_trend_worksheet = self._get_worksheet(spreadsheet_name, historical_search_trend_ws_name)
+        historical_sentiment_worksheet = self._get_worksheet(spreadsheet_name, historical_sentiment_ws_name)
         prediction_result_cells = self._get_all_cell_values(prediction_result_worksheet)
         tomorrow_prediction_cells = self._get_all_cell_values(tomorrow_prediction_worksheet)
+        historical_search_trend_cells = self._get_all_cell_values(historical_search_trend_worksheet)
+        historical_sentiment_cells = self._get_all_cell_values(historical_sentiment_worksheet)
         try:
             self.append_prediction_result(model_output, spreadsheet_name,
                                           prediction_result_ws_name, tomorrow_prediction_ws_name)
             self.update_tomorrow_prediction(model_output, spreadsheet_name, tomorrow_prediction_ws_name)
+            self.update_historical_search_trend(data_loader, spreadsheet_name, historical_search_trend_ws_name)
+            self.update_historical_sentiment(data_loader, spreadsheet_name, historical_sentiment_ws_name)
         except Exception as e:
             logging.error(e)
             logging.info("Rollback all updates")
             prediction_result_worksheet.update_values('A1', values=prediction_result_cells)
             tomorrow_prediction_worksheet.update_values('A1', values=tomorrow_prediction_cells)
+            historical_search_trend_worksheet.update_values('A1', values=historical_search_trend_cells)
+            historical_sentiment_worksheet.update_values('A1', values=historical_sentiment_cells)
 
     def append_prediction_history(self, model_output: dict, spreadsheet_name: str,
                                   worksheet_name: str):
@@ -260,3 +272,29 @@ class GSheetUpdater:
         worksheet = self._get_worksheet(spreadsheet_name, worksheet_name)
         worksheet.update_row(2, values=new_row)
         logging.info(f"Updating tomorrow Prediction success!")
+
+    def _update_historical_metrics(self, metrics: pd.DataFrame, spreadsheet_name: str, worksheet_name: str):
+        metric_name = metrics.name
+        replacement_cells = metrics.values.tolist()
+        worksheet = self._get_worksheet(spreadsheet_name, worksheet_name)
+        worksheet.update_values('A2', values=replacement_cells)
+        logging.info(f"Updating historical {metric_name} success!")
+
+    def update_historical_sentiment(self, data_loader: DataLoader,
+                                    spreadsheet_name: str, worksheet_name: str, n_days=7):
+        n_days_adjustment = 2
+        sentiment_df = data_loader.load_sentiment(data_loader.twitter_sentiment_dir,
+                                                  n_days - n_days_adjustment, data_loader.test_date)
+        sentiment_df = sentiment_df[['total_positive_twitter', 'total_negative_twitter']].reset_index()
+        sentiment_df['date'] = sentiment_df['date'].dt.strftime('%Y-%m-%d')
+        sentiment_df.name = 'Twitter Sentiment'
+        self._update_historical_metrics(sentiment_df, spreadsheet_name, worksheet_name)
+
+    def update_historical_search_trend(self, data_loader: DataLoader, spreadsheet_name: str,
+                                       worksheet_name: str, n_days=7):
+        trend_df = data_loader.load_gtrend(data_loader.gtrend_dir, n_days, data_loader.test_date, adjust_index=False)
+        trend_df = trend_df.reset_index()
+        trend_df['date'] = trend_df['date'].dt.strftime('%Y-%m-%d')
+        trend_df['trends'] = trend_df['trends'].apply(lambda x: round(x, 2))
+        trend_df.name = 'Search Trend'
+        self._update_historical_metrics(trend_df, spreadsheet_name, worksheet_name)
