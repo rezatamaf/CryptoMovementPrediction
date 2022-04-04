@@ -85,6 +85,7 @@ class Utils:
         df = df.copy()
         adjusted_index = [i + dt.timedelta(days_lag) for i in df.index]
         df.index = adjusted_index
+        df.index.name = 'date'
         return df
 
     @staticmethod
