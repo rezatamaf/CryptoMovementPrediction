@@ -154,18 +154,22 @@ class GSheetUpdater:
     def update_historical_sentiment(self, data_loader: DataLoader,
                                     spreadsheet_name: str, worksheet_name: str, n_days=7):
         n_days_adjustment = 2
+        date_reference = Utils.shift_date_str(data_loader.test_date, days_lag=1)
         sentiment_df = data_loader.load_sentiment(data_loader.twitter_sentiment_dir,
-                                                  n_days - n_days_adjustment, data_loader.test_date)
+                                                  n_days - n_days_adjustment, date_reference)
         sentiment_df = sentiment_df[['total_positive_twitter', 'total_negative_twitter']].reset_index()
         sentiment_df['date'] = sentiment_df['date'].dt.strftime('%Y-%m-%d')
         sentiment_df.name = 'Twitter Sentiment'
+        sentiment_df = Utils.adjust_date_index(sentiment_df, days_lag=1)
         self._update_historical_metrics(sentiment_df, spreadsheet_name, worksheet_name)
 
     def update_historical_search_trend(self, data_loader: DataLoader, spreadsheet_name: str,
                                        worksheet_name: str, n_days=7):
-        trend_df = data_loader.load_gtrend(data_loader.gtrend_dir, n_days, data_loader.test_date, adjust_index=False)
+        date_reference = Utils.shift_date_str(data_loader.test_date, days_lag=1)
+        trend_df = data_loader.load_gtrend(data_loader.gtrend_dir, n_days, date_reference, adjust_index=False)
         trend_df = trend_df.reset_index()
         trend_df['date'] = trend_df['date'].dt.strftime('%Y-%m-%d')
         trend_df['trends'] = trend_df['trends'].apply(lambda x: round(x, 2))
         trend_df.name = 'Search Trend'
+        trend_df = Utils.adjust_date_index(trend_df, days_lag=1)
         self._update_historical_metrics(trend_df, spreadsheet_name, worksheet_name)

@@ -71,9 +71,21 @@ class Utils:
         return re.search(pattern, text).group()
 
     @staticmethod
+    def shift_date_str(date: str, days_lag: int):
+        original_date_str = Utils.str_to_datetime(date) + dt.timedelta(days_lag)
+        return Utils.datetime_to_str(original_date_str)
+
+    @staticmethod
     def parse_date(df: pd.DataFrame, date_col='date') -> pd.DataFrame:
         df[date_col] = pd.to_datetime(df[date_col])
         return df.sort_values(by=date_col).set_index(date_col)
+
+    @staticmethod
+    def adjust_date_index(df: pd.DataFrame, days_lag: int) -> pd.DataFrame:
+        df = df.copy()
+        adjusted_index = [i + dt.timedelta(days_lag) for i in df.index]
+        df.index = adjusted_index
+        return df
 
     @staticmethod
     def load_relevant_jsons(data_dir: str, training_period: int, today_reference: str) -> pd.DataFrame:
@@ -132,5 +144,4 @@ class Utils:
         with open(path, 'w') as f:
             json.dump(model_output, f)
         return model_output
-
 

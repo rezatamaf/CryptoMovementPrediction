@@ -166,8 +166,7 @@ class DataLoader:
         logging.info("Loading google trend data ...")
         gtrend_df = Utils.load_relevant_jsons(data_dir, training_period, today_reference)
         if adjust_index:
-            adj_index = [i + dt.timedelta(3) for i in gtrend_df.index]
-            gtrend_df.index = adj_index
+            gtrend_df = Utils.adjust_date_index(gtrend_df, days_lag=2)
         gtrend_df.index.name = 'date'
         return gtrend_df
 
