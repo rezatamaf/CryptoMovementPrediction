@@ -1,7 +1,8 @@
 import logging
 
 from price_movement.data_loader import DataLoader
-from price_movement.util import Utils, GSheetUpdater
+from price_movement.util import Utils
+from price_movement.gsheet_updater import GSheetUpdater
 from price_movement.price_classifier import Model
 from price_movement.output_generator import generate_output
 from price_movement.feature_processor import select_features
