@@ -169,6 +169,6 @@ class GSheetUpdater:
         trend_df = data_loader.load_gtrend(data_loader.gtrend_dir, n_days, date_reference, adjust_index=False)
         trend_df = trend_df.reset_index()
         trend_df['date'] = trend_df['date'].dt.strftime('%Y-%m-%d')
-        trend_df['trends'] = trend_df['trends'].apply(lambda x: round(x, 2))
+        trend_df['trends'] = trend_df['trends'].apply(lambda x: round(x))
         trend_df.name = 'Search Trend'
         self._update_historical_metrics(trend_df, spreadsheet_name, worksheet_name)
