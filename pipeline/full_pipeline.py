@@ -6,7 +6,8 @@ from google.colab import drive
 from sentiment.model_loader import ModelLoader
 from sentiment.sentiment_inferrer import Inferrer
 from price_movement.data_loader import DataLoader
-from price_movement.util import Utils, GSheetUpdater
+from price_movement.util import Utils
+from price_movement.gsheet_updater import GSheetUpdater
 from price_movement.price_classifier import Model
 from price_movement.output_generator import generate_output
 from price_movement.feature_processor import select_features
@@ -47,6 +48,8 @@ GSHEET_NAME = 'ResultTable'
 # GSHEET_NAME = 'Prediction Result'  # make sure gservice account above has access to the gsheet
 PREDICTION_RESULT_WS_NAME = 'Prediction Result'
 TOMORROW_PREDICTION_WS_NAME = 'Tomorrow Prediction'
+HISTORICAL_SEARCH_TREND_WS_NAME = 'Historical Search Trend'
+HISTORICAL_SENTIMENT_WS_NAME = 'Historical Sentiment'
 
 # price model constants
 MODEL_THRESHOLD = 0.5
@@ -114,9 +117,12 @@ if ready:
     # insert model output to gsheet
     gs_updater = GSheetUpdater(GSERVICE_CREDENTIAL)
     gs_updater.update(model_output=output,
+                      data_loader=data_loader,
                       spreadsheet_name=GSHEET_NAME,
                       prediction_result_ws_name=PREDICTION_RESULT_WS_NAME,
-                      tomorrow_prediction_ws_name=TOMORROW_PREDICTION_WS_NAME)
+                      tomorrow_prediction_ws_name=TOMORROW_PREDICTION_WS_NAME,
+                      historical_search_trend_ws_name=HISTORICAL_SEARCH_TREND_WS_NAME,
+                      historical_sentiment_ws_name=HISTORICAL_SENTIMENT_WS_NAME)
 
     # dump model output as json
     Utils.dump_prediction_output(output, out_dir=PREDICTION_OUTPUT_DIR)

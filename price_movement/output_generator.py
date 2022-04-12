@@ -21,7 +21,7 @@ def generate_output(data_loader: DataLoader, predict_proba: np.array,
               'twitter_positive_sentiment': int(data_loader.twitter_positive_sentiment),
               'twitter_negative_sentiment': int(data_loader.twitter_negative_sentiment),
               'news_sentiment': round(float(data_loader.news_sentiment), 2),
-              'google_trends': int(data_loader.google_trends),
+              'google_trends': round(data_loader.google_trends),
               'selected_features': selected_features,
               }
     output.update(eval_metrics)

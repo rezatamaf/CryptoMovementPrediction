@@ -113,10 +113,10 @@ class DataLoader:
         self.reference_price = 0
 
     def run(self, training_period=30, today_reference: str = None):
-        twitter_df = self._load_sentiment(self.twitter_sentiment_dir, training_period, today_reference)
-        cnn_df = self._load_sentiment(self.cnn_sentiment_dir, training_period, today_reference)
-        gtrend_df = self._load_gtrend(self.gtrend_dir, training_period, today_reference)
-        btcnews_df = self._load_sentiment(self.btcnews_sentiment_dir, training_period, today_reference)
+        twitter_df = self.load_sentiment(self.twitter_sentiment_dir, training_period, today_reference)
+        cnn_df = self.load_sentiment(self.cnn_sentiment_dir, training_period, today_reference)
+        gtrend_df = self.load_gtrend(self.gtrend_dir, training_period, today_reference)
+        btcnews_df = self.load_sentiment(self.btcnews_sentiment_dir, training_period, today_reference)
         fundamental_df = self._load_fundamental(self.glassnode_api_path, twitter_df.index)
         influencer_df = self._load_influencer(self.influence_score_dir, self.influencer_sentiment_dir,
                                               training_period, today_reference)
@@ -142,7 +142,7 @@ class DataLoader:
         return data_df
 
     @staticmethod
-    def _load_sentiment(data_dir: str, training_period: int, today_reference: str) -> pd.DataFrame:
+    def load_sentiment(data_dir: str, training_period: int, today_reference: str) -> pd.DataFrame:
         col_prefix = data_dir.split('/')[-1].lower()  # use dir_name as prefix
         logging.info(f"Loading {col_prefix} sentiment data ...")
         sentiment_df = Utils.load_relevant_jsons(data_dir, training_period, today_reference)
@@ -162,11 +162,11 @@ class DataLoader:
         return price_df
 
     @staticmethod
-    def _load_gtrend(data_dir: str, training_period: int, today_reference: str) -> pd.DataFrame:
+    def load_gtrend(data_dir: str, training_period: int, today_reference: str, adjust_index=True) -> pd.DataFrame:
         logging.info("Loading google trend data ...")
         gtrend_df = Utils.load_relevant_jsons(data_dir, training_period, today_reference)
-        adj_index = [i + dt.timedelta(3) for i in gtrend_df.index]
-        gtrend_df.index = adj_index
+        if adjust_index:
+            gtrend_df = Utils.adjust_date_index(gtrend_df, days_lag=2)
         gtrend_df.index.name = 'date'
         return gtrend_df
 
@@ -186,7 +186,7 @@ class DataLoader:
     @staticmethod
     def _load_influencer(influence_score_dir: str, sentiment_dir: str, training_period: int, today_reference: str):
         logging.info("Loading twitter influencer data ...")
-        influencer_sentiment_df = DataLoader._load_sentiment(sentiment_dir, training_period, today_reference)
+        influencer_sentiment_df = DataLoader.load_sentiment(sentiment_dir, training_period, today_reference)
         influencer_sentiment_df = influencer_sentiment_df.rename({'total_docs': 'influencer_appearances'}, axis=1)
         influence_score_df = Utils.load_relevant_jsons(influence_score_dir, training_period, today_reference)
         dfs = [influence_score_df, influencer_sentiment_df]
